@@ -1,8 +1,8 @@
 #
-# $Id: canvas.py,v 1.1 2017/06/14 03:01:53 tyamamot Exp $
+# $Id: canvas.py,v 1.2 2017/08/11 06:06:48 tyamamot Exp $
 #
 
-import re, sys
+import re, sys, time
 
 from Tkinter import *
 from Module import *
@@ -156,6 +156,8 @@ class DrawCanvas:
 
         id = self.canvas.find_withtag(full_instance_name)
         if len(id) != 0:
+            self.forcus(id)
+            return
             
         # Display instance box
         width        = settings.box_width
@@ -249,4 +251,15 @@ class DrawCanvas:
             instance = fanout[i+1]
             pin_name = fanout[i+2]
             #print "display_instance=",full_parent_instance_name+instance.name
-            self.display_instance(full_parent_instance_name+instance.name)
+            pin2_tag = self.display_instance(full_parent_instance_name+instance.name)
+            self.add_nets(pin_tag, pin2_tag)
+
+    def forcus(self,id):
+        color = self.canvas.itemconfig(id, "fill")[4]
+        self.canvas.itemconfig(id, fill=settings.forcus_color)
+        #print self.canvas.find_tags(id)
+        #time.sleep(10)
+        self.canvas.itemconfig(id, fill=color)
+
+    def add_nets(self, pin1_tag, pin2_tag):
+        print "add_nets"
