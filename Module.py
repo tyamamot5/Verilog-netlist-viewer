@@ -1,26 +1,50 @@
+# $Id: Module.py,v 1.3 2017/09/06 03:03:58 tyamamot Exp $
+
 import re, sys
 from Instance import *
+from Pin      import *
 from settings import *
 
 class Module:
     def __init__(self, line):
-        self.name = line.split(" ")[1]
+        self.name        = line.split(" ")[1]
         self.module_line = line.split(" ")[1:]
-        self.instances = {}
-        self.inputs = []
-        self.outputs = []
+        self.instances   = {}
 
-    def get_pins_of_line(self,line,str):
+        # input/output pin list. List of class Pin
+        #self.inputs  = []
+        #self.outputs = []
+        # input/output pin list. List of class Pin indexed by pin name
+        self.inputs  = {}
+        self.outputs = {}
+
+    def get_pins_of_line(self, line, str):
         index = line.find(str)
         return line[index+len(str):].replace(" ","").replace(";","").split(",")
 
-    def add_input(self,line):
-        self.inputs.extend( self.get_pins_of_line(line, "input") )
+    def add_inputs(self,line):
+        for i in self.get_pins_of_line(line, settings.tag_input):
+            #print "add_inputs():", i
+            self.inputs[i] = Pin(i, self, settings.tag_input)
+            self.inputs[i].set_is_external_pin()
 
-    def add_output(self,line):
-        self.outputs.extend( self.get_pins_of_line(line, "output") )
+    def add_outputs(self,line):
+        for i in self.get_pins_of_line(line, settings.tag_output):
+            #self.outputs.append( Pin(i, self, settings.tag_output))
+            self.outputs[i] = Pin(i, self, "output")
+            self.outputs[i].set_is_external_pin()
 
-    def add_inout(self,line):
+    def add_library_inputs(self,line):
+        for i in self.get_pins_of_line(line, settings.tag_input):
+            #print "add_inputs():", i
+            self.inputs[i] = Pin(i, self, settings.tag_input)
+
+    def add_library_outputs(self,line):
+        for i in self.get_pins_of_line(line, settings.tag_output):
+            #self.outputs.append( Pin(i, self, settings.tag_output))
+            self.outputs[i] = Pin(i, self, settings.tag_output)
+        
+    def add_inouts(self,line):
         self.inouts.append( self.get_pins_of_line(line, "inout") )
 
     def add_instance(self,line):
@@ -33,9 +57,6 @@ class Module:
         #print "add_instance: inst=", inst_name, "module=",my_module_name , ",parent module=",self.name
         self.instances[inst_name] = Instance( self, inst_name, my_module_name, remaining_line[inst_end_index+1:].replace(";","").replace(" ","").replace("\t","")[:-1])
         
-        # at this moment, an instance is not flattened
-        #module_by_instance_name[inst_name] = self
-
     def input_count(self):
         return len(self.inputs)
 
@@ -91,8 +112,14 @@ class Module:
                     inst = next_module.find_instance( next_instance_name, next_module )
                 #else:
                     #print "No such module: ", inst.module_name
+        elif this_module.outputs.has_key(this_instance_name) :
+            inst = this_module.outputs[ this_instance_name ]
+
+        elif this_module.inputs.has_key(this_instance_name) :
+            inst = this_module.inputs[ this_instance_name ]
+
         else:
-            print instance_name, "not found"
+            print "find_instance(): not found", instance_name
             
         return inst
 
@@ -114,3 +141,8 @@ class Module:
 
         return ans
         
+    def get_input(self, ith):
+        return self.inputs[ith]
+
+    def get_output(self, ith):
+        return self.outputs[ith]
